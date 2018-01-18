@@ -1,73 +1,49 @@
 from lxml import etree, html
 import sys
 from selenium import webdriver
-from PIL import Image
-from cStringIO import StringIO
 
-verbose = 1 
-driver = webdriver.Chrome()
+#must use PhantomJS even though its depreciated to get full page capture
+driver = webdriver.PhantomJS()
 
+#initial login page
 driver.get('https://serviceinfo.harley-davidson.com/sip/user/loginForm')
 
-
+#sip username / password
 username = driver.find_element_by_name('username')
-username.send_keys('haligen')
+username.send_keys('******')
 
 password = driver.find_element_by_name('password')
-password.send_keys('Lancer5137')
+password.send_keys('******')
 
 form = driver.find_element_by_id('login-submit')
 form.submit()
 
-file = open("285745.html", "r")
-file2 = file.read()
+#name of the HTML file for the document you want to save
+file = open("287572.html", "r")
+file2 = file.read() #html to string
 
 tree = html.fromstring(file2)
 
-serviceURLs = tree.xpath('//@href')
+serviceURLs = tree.xpath('//@href') #extracts all the page links
 
+#used to make unique file names
 begin = 'softail'
 count = 0
 end = '.png'
 
-js = 'return Math.max( document.body.scrollHeight, document.body.offsetHeight,  document.documentElement.clientHeight,  document.documentElement.scrollHeight,  document.documentElement.offsetHeight);'
-
-
+#iterate though each url extracted from the HTML
 for service in serviceURLs:
+    #combine main url with extracted url
     website = "https://serviceinfo.harley-davidson.com" + service
     driver.get(website)
-    scrollheight = driver.execute_script(js)
+    driver.set_window_size(1280, 1024) #must set the window size for PhantomJS
 
     try:
-        if verbose > 0: 
-            print scrollheight
-
-        slices = []
-        offset = 0
-        while offset < scrollheight:
-            if verbose > 0: 
-                print offset
-
-            driver.execute_script("window.scrollTo(0, %s);" % offset)
-            img = Image.open(StringIO(driver.get_screenshot_as_png()))
-            offset += img.size[1]
-            slices.append(img)
-
-            if verbose > 0:
-                driver.get_screenshot_as_file('%s/screen_%s.png' % ('/tmp', offset))
-                print scrollheight
-
-
-        screenshot = Image.new('RGB', (slices[0].size[0], scrollheight))
-        offset = 0
-        for img in slices:
-            screenshot.paste(img, (0, offset))
-            offset += img.size[1]
-
-        screenshot.save(begin + str(count) + end)
+        #change ./diagman/ to whatever folder you made to save the pics in
+        driver.save_screenshot('./diagman/' + begin + str(count) + end)
 
     except:
         print("nope")
-    count += 1
+    count += 1 #used for file name generation
  
 driver.close()
